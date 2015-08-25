@@ -1,5 +1,5 @@
 [package]
 
-name = "rustPathTracer"
+name = "rust_path_tracer"
 version = "0.0.1"
 authors = ["cv"]
