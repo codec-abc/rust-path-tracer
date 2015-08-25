@@ -49,7 +49,6 @@ fn get_padding(nb_padding_byte : u32) -> Vec<u8>
 
 impl Image
 {
-    #[allow(dead_code)]
     pub fn new_image(width : u32, height : u32, format : PixelFormat) -> Image
     {
         let buffer_size : usize =
@@ -75,7 +74,6 @@ impl Image
         return img;
     }
 
-    #[allow(dead_code)]
     pub fn get_pixel(& self, x : u32, y : u32) -> RGBAPixel
     {
         let bytes_per_pixel = match self.pixel_format
@@ -106,7 +104,6 @@ impl Image
         return pixel;
     }
 
-    #[allow(dead_code)]
     pub fn set_pixel(&mut self, x : u32, y : u32, pixel : RGBAPixel)
     {
         let bytes_per_pixel = match self.pixel_format
@@ -125,7 +122,6 @@ impl Image
         }
     }
 
-    #[allow(dead_code)]
     pub fn write_to_file(&self, path : &str)
     {
         let f = File::create(path);
