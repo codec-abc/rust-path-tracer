@@ -111,7 +111,6 @@ pub mod bmp
                 PixelFormat::RGB => 3
             };
             let index = ((x + y * self.width) * bytes_per_pixel) as usize;
-            //println!("index is {}", index);
             self.pixel_data[index] = pixel.r;
             self.pixel_data[index + 1] = pixel.g;
             self.pixel_data[index + 2] = pixel.b;
