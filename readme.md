@@ -4,4 +4,4 @@ It should work out of the box by typing
 '''cargo run'''
 
 The code is based on Kevin Beason's path tracer.
-[Here](ttp://www.kevinbeason.com/smallpt/) is the original article with corresponding code (in C++)
+[Here](http://www.kevinbeason.com/smallpt) is the original article with corresponding code (in C++)
