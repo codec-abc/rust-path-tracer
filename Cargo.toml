@@ -3,3 +3,6 @@
 name = "rust_path_tracer"
 version = "0.0.1"
 authors = ["cv"]
+
+[dependencies]
+rand = "0.3"

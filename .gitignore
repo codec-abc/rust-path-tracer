@@ -4,3 +4,4 @@ Cargo.lock
 *.racertmp
 test.bmp
 test_alpha.bmp
+output_image.bmp

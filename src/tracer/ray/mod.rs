@@ -10,7 +10,7 @@ pub struct Ray
 impl Ray
 {
     #[allow(dead_code)]
-    fn new (origin : vector::Vector, direction : vector::Vector) -> Ray
+    pub fn new (origin : vector::Vector, direction : vector::Vector) -> Ray
     {
         Ray { o : origin, d : direction}
     }
