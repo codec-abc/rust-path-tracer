@@ -9,9 +9,7 @@ use std::f64::consts::PI;
 
 fn erand48(xi : &mut rand::StdRng) -> f64
 {
-    let random = xi.next_f64();
-    //println!("random is {}" , random);
-    return random;
+    xi.next_f64()
 }
 
 #[allow(dead_code)]
@@ -80,15 +78,15 @@ fn radiance(spheres : &Vec<sphere::Sphere>, r : &ray::Ray, depth : &mut u32, xi 
         return obj.e + f.mult(&radiance(spheres, &ray::Ray::new(x,r.d-n*2.0*n.dot(&r.d)),depth,xi));
     }
 
-    let refl_ray = ray::Ray::new(x, r.d-n*2.0*n.dot(&r.d));     // Ideal dielectric REFRACTION
-    let into = n.dot(&nl) > 0.0;                // Ray from outside going in?
+    let refl_ray = ray::Ray::new(x, r.d-n*2.0*n.dot(&r.d));
+    let into = n.dot(&nl) > 0.0;
     let nc = 1.0;
     let nt = 1.5;
     let nnt = if into { nc/nt } else { nt/nc };
     let ddn = r.d.dot(&nl);
     let cos2t = 1.0 - nnt*nnt*(1.0-ddn*ddn);
 
-    if cos2t < 0.0    // Total internal reflection
+    if cos2t < 0.0
     {
         return obj.e + f.mult(&radiance(spheres, &refl_ray, depth, xi));
     }
@@ -151,9 +149,8 @@ pub fn compute(w : u32, h : u32, samps : u32) -> Vec<vector::Vector>
                 for sx in 0 .. 2
                 {
                     let mut r = vector::Vector::new_zero();
-                    for _ in 0 .. samps //s
+                    for _ in 0 .. samps
                     {
-                        //println!("pixel is {} {}" , x, y);
                         let r1 = 2.0 * erand48(&mut xi);
                         let dx = if r1 < 1.0 { r1.sqrt() - 1.0} else { 1.0 - (2.0 - r1).sqrt() };
                         let r2 = 2.0 * erand48(&mut xi);
@@ -178,7 +175,6 @@ pub fn compute(w : u32, h : u32, samps : u32) -> Vec<vector::Vector>
                         r = r + radiance(&spheres, &ray::Ray::new(cam.o+d*140.0,d.norm()),&mut depth,&mut xi)*(1.0/samps as f64);
 
                     }
-                    //println!("r is {} {} {}", r.x, r.y, r.z);
                     c[i as usize] = c[i as usize] + vector::Vector::new(clamp(r.x),clamp(r.y),clamp(r.z))* 0.25;
                 }
             }
@@ -229,7 +225,6 @@ fn intersect(spheres : &Vec<sphere::Sphere>, r : &ray::Ray, t : &mut f64, id : &
 #[allow(dead_code)]
 fn build_sphere() -> Vec<sphere::Sphere>
 {
-    //Scene: radius, position, emission, color, material
     let spheres = vec![
         sphere::Sphere::new(1e5, vector::Vector::new(1e5+1.0,40.8,81.6), vector::Vector::new(0.0, 0.0, 0.0), vector::Vector::new(0.75,0.25,0.25),   refl::Refl::DIFF),//Left
         sphere::Sphere::new(1e5, vector::Vector::new(-1e5+99.0,40.8,81.6),vector::Vector::new(0.0, 0.0, 0.0), vector::Vector::new(0.25,0.25,0.75),   refl::Refl::DIFF),//Rght

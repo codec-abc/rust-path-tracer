@@ -5,11 +5,11 @@ use ::tracer::ray;
 #[derive(Copy, Clone)]
 pub struct Sphere
 {
-  pub rad : f64,       // radius
+  pub rad : f64,
   pub p : vector::Vector,
   pub e : vector::Vector,
-  pub c : vector::Vector,      // position, emission, color
-  pub refl : refl::Refl     // reflection type (DIFFuse, SPECular, REFRactive)
+  pub c : vector::Vector,
+  pub refl : refl::Refl
 }
 
 impl Sphere

@@ -6,7 +6,6 @@ pub struct Ray
     pub d : vector::Vector
 }
 
-
 impl Ray
 {
     #[allow(dead_code)]

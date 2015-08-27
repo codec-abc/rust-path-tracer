@@ -1,4 +1,3 @@
-use std;
 use std::fs::File;
 use std::io::prelude::*;
 use std::mem::transmute;
@@ -64,7 +63,12 @@ impl Image
                 (width * height * 3) as usize
             }
         };
-        let vec = std::iter::repeat(0).take(buffer_size).collect::<Vec<u8>>();
+        let mut vec : Vec<u8> = vec![];
+        for _ in 0 .. buffer_size
+        {
+            vec.push(0);
+        }
+        // or std::iter::repeat(0).take(buffer_size).collect::<Vec<u8>>();
         let img = Image
         {
             width : width,
@@ -206,11 +210,9 @@ impl Image
                 bytes_data.extend(&vec![0x00, 0x00, 0x00, 0x00]);
                 bytes_data.extend(&vec![0x00, 0x00, 0x00, 0x00]);
                 bytes_data.extend(&vec![0x00, 0x00, 0x00, 0x00]);
-
                 /****/
 
                 /* pixel data */
-
                 for j in 0 .. self.height
                 {
                     for i in 0 .. self.width
