@@ -160,7 +160,7 @@ impl Tracer
     pub fn compute(&self) -> Vec<vector::Vector>
     {
         println!("Running");
-        let mut pool = Pool::new(8);
+        let mut pool = Pool::new(16);
         let begin_time = time::now();
 
         let cam = ray::Ray::new(vector::Vector::new(50.0, 52.0, 295.6), vector::Vector::new(0.0,-0.042612,-1.0).norm());
@@ -177,7 +177,8 @@ impl Tracer
         }
         let c = Arc::new(Mutex::new(c_));
         let cam_arc = Arc::new(cam);
-
+        let completion = Arc::new(Mutex::new(0.0));
+        let old_completion = Arc::new(Mutex::new(0.0));
         pool.scoped(|scope|
         {
             for y in 0 .. self.h
@@ -188,6 +189,8 @@ impl Tracer
                     {
                         let c_ref = c.clone();
                         let cam_copy = cam_arc.clone();
+                        let completion_ref = completion.clone();
+                        let old_completion_ref = old_completion.clone();
                         scope.execute(move ||
                         {
                             let i = (self.h - y -1) * self.w + x;
@@ -231,6 +234,15 @@ impl Tracer
                                     c2[i as usize] = new_value;
                                 }
                             }
+                            let ref mut completion = *(completion_ref.lock().unwrap());
+                            let ref mut old_completion = *(old_completion_ref.lock().unwrap());
+                            let completion_add = 1.0/((self.w * self.h) as f64);
+                            if *completion - *old_completion > 0.1
+                            {
+                                *old_completion = *completion;
+                                println!("Rendering {} spp, {1:.3} %", self.samps * 4, 100.0 *(*completion));
+                            }
+                            *completion = *completion + completion_add;
                         });
                     }
                 }
