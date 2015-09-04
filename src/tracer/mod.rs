@@ -157,10 +157,9 @@ impl Tracer
     pub fn compute(&self, w : u32, h : u32, samps : u32) -> Vec<vector::Vector>
     {
         println!("Running");
-        let mut pool = Pool::new(1);
+        let mut pool = Pool::new(8);
         let begin_time = time::now();
 
-        let mut old_percent_rendering = 0.0;
         let cam = ray::Ray::new(vector::Vector::new(50.0, 52.0, 295.6), vector::Vector::new(0.0,-0.042612,-1.0).norm());
         let cx = vector::Vector::new((w as f64) * 0.5135 / (h as f64), 0.0 , 0.0);
         let cy = (cx % cam.d).norm() * 0.5135;
@@ -176,30 +175,24 @@ impl Tracer
         let c = Arc::new(Mutex::new(c_));
         let cam_arc = Arc::new(cam);
 
-        for y in 0 .. h
+        pool.scoped(|scope|
         {
-            let rendering_percent = 100.0 * (y as f64)/(h as f64 - 1.0);
-            if rendering_percent - old_percent_rendering > 10.0
+            for y in 0 .. h
             {
-                println!("Rendering {} spp, {1:.3} %", samps*4, rendering_percent);
-                old_percent_rendering = rendering_percent;
-            }
-
-            for x in 0 .. w
-            {
-                let i = (h-y-1)*w+x;
-                for sy in 0 .. 2
+                for x in 0 .. w
                 {
-                    for sx in 0 .. 2
+                    unsafe
                     {
                         let c_ref = c.clone();
                         let cam_copy = cam_arc.clone();
-                        pool.scoped(|scope|
+                        scope.execute(move ||
                         {
-                            unsafe
+                            let i = (h-y-1)*w+x;
+                            for sy in 0 .. 2
                             {
-                                scope.execute(move ||
+                                for sx in 0 .. 2
                                 {
+
                                     let mut r = vector::Vector::new_zero();
                                     for _ in 0 .. samps
                                     {
@@ -233,13 +226,14 @@ impl Tracer
                                     let mut c2 = c_ref.lock().unwrap();
                                     let new_value = c2[i as usize] + vector::Vector::new(clamp(r.x),clamp(r.y),clamp(r.z))* 0.25;
                                     c2[i as usize] = new_value;
-                                });
+                                }
                             }
                         });
                     }
                 }
             }
-        }
+        });
+
         let w = c.lock().unwrap().clone();
         let end_time = time::now();
         let diff_time = end_time - begin_time;
