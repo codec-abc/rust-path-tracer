@@ -2,6 +2,8 @@ mod tracer;
 mod bmp;
 
 extern crate rand;
+extern crate scoped_threadpool;
+extern crate time;
 
 #[allow(dead_code)]
 fn main()

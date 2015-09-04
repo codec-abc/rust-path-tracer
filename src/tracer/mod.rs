@@ -6,24 +6,28 @@ mod sphere;
 use rand;
 use rand::Rng;
 use std::f64::consts::PI;
-use std::cell::RefCell;
+//use std::cell::RefCell;
 use std::sync::Mutex;
 use std::sync::Arc;
-use std::thread;
+use scoped_threadpool::Pool;
+use time;
 
 struct Tracer
 {
     spheres : Vec<sphere::Sphere>,
-    rng : Mutex<RefCell<rand::StdRng>>,
+    //rng : Mutex<RefCell<rand::StdRng>>,
 }
 
 impl Tracer
 {
     fn generate_random_float(&self) -> f64
     {
+        /*
         let ref_cell_rng = self.rng.lock().unwrap();
         let nb = ref_cell_rng.borrow_mut().next_f64();
         return nb;
+        */
+        rand::thread_rng().gen::<f64>()
     }
 
     #[allow(dead_code)]
@@ -148,9 +152,15 @@ impl Tracer
         }
     }
 
+    #[allow(unused_variables)]
     #[allow(dead_code)]
     pub fn compute(&self, w : u32, h : u32, samps : u32) -> Vec<vector::Vector>
     {
+        println!("Running");
+        let mut pool = Pool::new(1);
+        let begin_time = time::now();
+
+        let mut old_percent_rendering = 0.0;
         let cam = ray::Ray::new(vector::Vector::new(50.0, 52.0, 295.6), vector::Vector::new(0.0,-0.042612,-1.0).norm());
         let cx = vector::Vector::new((w as f64) * 0.5135 / (h as f64), 0.0 , 0.0);
         let cy = (cx % cam.d).norm() * 0.5135;
@@ -168,7 +178,13 @@ impl Tracer
 
         for y in 0 .. h
         {
-            println!("Rendering {} spp, {1:.3} %", samps*4, 100.0 * (y as f64)/(h as f64 - 1.0));
+            let rendering_percent = 100.0 * (y as f64)/(h as f64 - 1.0);
+            if rendering_percent - old_percent_rendering > 10.0
+            {
+                println!("Rendering {} spp, {1:.3} %", samps*4, rendering_percent);
+                old_percent_rendering = rendering_percent;
+            }
+
             for x in 0 .. w
             {
                 let i = (h-y-1)*w+x;
@@ -176,49 +192,58 @@ impl Tracer
                 {
                     for sx in 0 .. 2
                     {
-                        let mut c_ref = c.clone();
+                        let c_ref = c.clone();
                         let cam_copy = cam_arc.clone();
-                        //thread::spawn(move ||
-                        //{
-                            let mut r = vector::Vector::new_zero();
-                            for _ in 0 .. samps
+                        pool.scoped(|scope|
+                        {
+                            unsafe
                             {
-                                let r1 = 2.0 * self.generate_random_float();
-                                let dx = if r1 < 1.0 { r1.sqrt() - 1.0} else { 1.0 - (2.0 - r1).sqrt() };
-                                let r2 = 2.0 * self.generate_random_float();
-                                let dy = if r2 < 1.0 { r2.sqrt() - 1.0} else { 1.0 - (2.0 - r2).sqrt() };
+                                scope.execute(move ||
+                                {
+                                    let mut r = vector::Vector::new_zero();
+                                    for _ in 0 .. samps
+                                    {
+                                        let r1 = 2.0 * self.generate_random_float();
+                                        let dx = if r1 < 1.0 { r1.sqrt() - 1.0} else { 1.0 - (2.0 - r1).sqrt() };
+                                        let r2 = 2.0 * self.generate_random_float();
+                                        let dy = if r2 < 1.0 { r2.sqrt() - 1.0} else { 1.0 - (2.0 - r2).sqrt() };
 
-                                let r1 = 0.0;
-                                let dx = 0.0;
-                                let r2 = 0.0;
-                                let dy = 0.0;
+                                        let r1 = 0.0;
+                                        let dx = 0.0;
+                                        let r2 = 0.0;
+                                        let dy = 0.0;
 
-                                let sxf64 : f64 = sx as f64;
-                                let syf64 : f64 = sy as f64;
+                                        let sxf64 : f64 = sx as f64;
+                                        let syf64 : f64 = sy as f64;
 
-                                let dxf64 : f64 = dx as f64;
-                                let dyf64 : f64 = dy as f64;
+                                        let dxf64 : f64 = dx as f64;
+                                        let dyf64 : f64 = dy as f64;
 
-                                let xf64 : f64 = x as f64;
-                                let yf64 : f64 = y as f64;
+                                        let xf64 : f64 = x as f64;
+                                        let yf64 : f64 = y as f64;
 
-                                let wf64 : f64 = w as f64;
-                                let hf64 : f64 = h as f64;
+                                        let wf64 : f64 = w as f64;
+                                        let hf64 : f64 = h as f64;
 
-                                let fx = ((sxf64 + 0.5 + dxf64)/2.0 + xf64)/wf64 - 0.5;
-                                let fy = ((syf64 + 0.5 + dyf64)/2.0 + yf64)/hf64 - 0.5;
-                                let d = cx * fx + cy * fy + cam_copy.d;
-                                r = r + self.radiance(&ray::Ray::new(cam_copy.o + d * 140.0, d.norm()))*(1.0/samps as f64);
+                                        let fx = ((sxf64 + 0.5 + dxf64)/2.0 + xf64)/wf64 - 0.5;
+                                        let fy = ((syf64 + 0.5 + dyf64)/2.0 + yf64)/hf64 - 0.5;
+                                        let d = cx * fx + cy * fy + cam_copy.d;
+                                        r = r + self.radiance(&ray::Ray::new(cam_copy.o + d * 140.0, d.norm()))*(1.0/samps as f64);
+                                    }
+                                    let mut c2 = c_ref.lock().unwrap();
+                                    let new_value = c2[i as usize] + vector::Vector::new(clamp(r.x),clamp(r.y),clamp(r.z))* 0.25;
+                                    c2[i as usize] = new_value;
+                                });
                             }
-                            let mut c2 = c_ref.lock().unwrap();
-                            let new_value = c2[i as usize] + vector::Vector::new(clamp(r.x),clamp(r.y),clamp(r.z))* 0.25;
-                            c2[i as usize] = new_value;
-                        //});
+                        });
                     }
                 }
             }
         }
         let w = c.lock().unwrap().clone();
+        let end_time = time::now();
+        let diff_time = end_time - begin_time;
+        println!("Time taken to render picture {:02}h:{:02}m:{:02}s:{:04}ms" , diff_time.num_hours(), diff_time.num_minutes(), diff_time.num_seconds(), diff_time.num_milliseconds());
         return w;
     }
 
@@ -292,7 +317,7 @@ pub fn generate_image(w : u32, h : u32, samps : u32) -> Vec<vector::Vector>
     let tr = Tracer
     {
         spheres : build_sphere(),
-        rng : Mutex::new(RefCell::new(rand::StdRng::new().unwrap())),
+        //rng : Mutex::new(RefCell::new(rand::StdRng::new().unwrap())),
     };
     tr.compute(w, h, samps)
 }
