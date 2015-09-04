@@ -15,6 +15,9 @@ use time;
 struct Tracer
 {
     spheres : Vec<sphere::Sphere>,
+    w : u32,
+    h : u32,
+    samps : u32,
     //rng : Mutex<RefCell<rand::StdRng>>,
 }
 
@@ -154,20 +157,20 @@ impl Tracer
 
     #[allow(unused_variables)]
     #[allow(dead_code)]
-    pub fn compute(&self, w : u32, h : u32, samps : u32) -> Vec<vector::Vector>
+    pub fn compute(&self) -> Vec<vector::Vector>
     {
         println!("Running");
         let mut pool = Pool::new(8);
         let begin_time = time::now();
 
         let cam = ray::Ray::new(vector::Vector::new(50.0, 52.0, 295.6), vector::Vector::new(0.0,-0.042612,-1.0).norm());
-        let cx = vector::Vector::new((w as f64) * 0.5135 / (h as f64), 0.0 , 0.0);
+        let cx = vector::Vector::new((self.w as f64) * 0.5135 / (self.h as f64), 0.0 , 0.0);
         let cy = (cx % cam.d).norm() * 0.5135;
 
         let mut c_ = vec![];
-        for _ in 0 .. w
+        for _ in 0 .. self.w
         {
-            for _ in 0 .. h
+            for _ in 0 .. self.h
             {
                 c_.push(vector::Vector::new_zero());
             }
@@ -177,9 +180,9 @@ impl Tracer
 
         pool.scoped(|scope|
         {
-            for y in 0 .. h
+            for y in 0 .. self.h
             {
-                for x in 0 .. w
+                for x in 0 .. self.w
                 {
                     unsafe
                     {
@@ -187,14 +190,14 @@ impl Tracer
                         let cam_copy = cam_arc.clone();
                         scope.execute(move ||
                         {
-                            let i = (h-y-1)*w+x;
+                            let i = (self.h - y -1) * self.w + x;
                             for sy in 0 .. 2
                             {
                                 for sx in 0 .. 2
                                 {
 
                                     let mut r = vector::Vector::new_zero();
-                                    for _ in 0 .. samps
+                                    for _ in 0 .. self.samps
                                     {
                                         let r1 = 2.0 * self.generate_random_float();
                                         let dx = if r1 < 1.0 { r1.sqrt() - 1.0} else { 1.0 - (2.0 - r1).sqrt() };
@@ -215,13 +218,13 @@ impl Tracer
                                         let xf64 : f64 = x as f64;
                                         let yf64 : f64 = y as f64;
 
-                                        let wf64 : f64 = w as f64;
-                                        let hf64 : f64 = h as f64;
+                                        let wf64 : f64 = self.w as f64;
+                                        let hf64 : f64 = self.h as f64;
 
                                         let fx = ((sxf64 + 0.5 + dxf64)/2.0 + xf64)/wf64 - 0.5;
                                         let fy = ((syf64 + 0.5 + dyf64)/2.0 + yf64)/hf64 - 0.5;
                                         let d = cx * fx + cy * fy + cam_copy.d;
-                                        r = r + self.radiance(&ray::Ray::new(cam_copy.o + d * 140.0, d.norm()))*(1.0/samps as f64);
+                                        r = r + self.radiance(&ray::Ray::new(cam_copy.o + d * 140.0, d.norm()))*(1.0/self.samps as f64);
                                     }
                                     let mut c2 = c_ref.lock().unwrap();
                                     let new_value = c2[i as usize] + vector::Vector::new(clamp(r.x),clamp(r.y),clamp(r.z))* 0.25;
@@ -311,7 +314,10 @@ pub fn generate_image(w : u32, h : u32, samps : u32) -> Vec<vector::Vector>
     let tr = Tracer
     {
         spheres : build_sphere(),
+        w : w,
+        h : h,
+        samps : samps,
         //rng : Mutex::new(RefCell::new(rand::StdRng::new().unwrap())),
     };
-    tr.compute(w, h, samps)
+    tr.compute()
 }
