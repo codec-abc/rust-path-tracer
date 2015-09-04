@@ -130,7 +130,7 @@ impl Image
     }
 
     #[allow(dead_code)]
-    pub fn write_to_file(&self, path : &str)
+    fn write_to_file_rgba(&self, path : &str)
     {
         let f = File::create(path);
         match f
@@ -236,6 +236,25 @@ impl Image
 
                 let _ = file.write_all(&bytes_data);
             }
+        }
+    }
+
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
+    fn write_to_file_rgb(&self, path : &str)
+    {
+        unimplemented!();
+    }
+
+    pub fn write_to_file(&self, path: &str)
+    {
+        if self.pixel_format == PixelFormat::RGBA
+        {
+            self.write_to_file_rgba(path);
+        }
+        else if self.pixel_format == PixelFormat::RGB
+        {
+            self.write_to_file_rgb(path);
         }
     }
 }

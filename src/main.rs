@@ -9,7 +9,7 @@ fn main()
     let width = 300;
     let height = 200;
     let sample = 15;
-    let image = tracer::compute(width, height, sample);
+    let image = tracer::generate_image(width, height, sample);
     let mut output_image = bmp::Image::new_image(width, height, bmp::PixelFormat::RGBA);
 
     for i in 0 .. width
